@@ -75,7 +75,7 @@ export default function Dashboard() {
   const handleReconcile = async () => { setRunning(true); try { const r = await invokeReconcileSignals(); toast.success(`Reconciled ${r.reconciled} signals`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
 
   const symbols = pairs.filter(p => p.is_active).map(p => p.symbol);
-  const { tickers, loading: tickersLoading } = useBinanceTickers(symbols);
+  const { tickers, loading: tickersLoading, wsConnected } = useBinanceTickers(symbols);
 
   useEffect(() => {
     fetchData();
@@ -119,9 +119,9 @@ export default function Dashboard() {
               <Button size="sm" disabled={running} onClick={handleAnalysis}><Play className="h-3 w-3 mr-1" />Run Analysis</Button>
             </>
           )}
-          <Badge variant="outline" className="gap-1">
-            <Activity className="h-3 w-3 text-primary animate-pulse-glow" />
-            Live
+          <Badge variant="outline" className={`gap-1 ${wsConnected ? '' : 'border-destructive'}`}>
+            <Activity className={`h-3 w-3 ${wsConnected ? 'text-primary animate-pulse-glow' : 'text-destructive'}`} />
+            {wsConnected ? 'Live WS' : 'REST Only'}
           </Badge>
           <span className="text-xs text-muted-foreground">
             <Clock className="h-3 w-3 inline mr-1" />

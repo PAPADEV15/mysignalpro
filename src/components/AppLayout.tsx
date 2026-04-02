@@ -1,12 +1,13 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { BarChart3, Activity, Signal, List, Settings, Shield, LogOut, TrendingUp } from 'lucide-react';
+import { BarChart3, Activity, Signal, List, Settings, Shield, LogOut, TrendingUp, PieChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: BarChart3, roles: ['admin', 'analyst', 'viewer'] },
   { path: '/signals', label: 'Signals', icon: Signal, roles: ['admin', 'analyst', 'viewer'] },
   { path: '/analysis-runs', label: 'Analysis', icon: Activity, roles: ['admin', 'analyst', 'viewer'] },
+  { path: '/metrics', label: 'Metrics', icon: PieChart, roles: ['admin', 'analyst', 'viewer'] },
   { path: '/watchlist', label: 'Watchlist', icon: List, roles: ['admin'] },
   { path: '/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
   { path: '/audit', label: 'Audit', icon: Shield, roles: ['admin'] },

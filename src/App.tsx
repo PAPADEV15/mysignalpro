@@ -14,6 +14,7 @@ import AnalysisRuns from "@/pages/AnalysisRuns";
 import Watchlist from "@/pages/Watchlist";
 import SettingsPage from "@/pages/Settings";
 import Audit from "@/pages/Audit";
+import Metrics from "@/pages/Metrics";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="signals" element={<Signals />} />
               <Route path="signals/:id" element={<SignalDetail />} />
               <Route path="analysis-runs" element={<AnalysisRuns />} />
+              <Route path="metrics" element={<Metrics />} />
               <Route path="watchlist" element={<ProtectedRoute requiredRole="admin"><Watchlist /></ProtectedRoute>} />
               <Route path="settings" element={<ProtectedRoute requiredRole="admin"><SettingsPage /></ProtectedRoute>} />
               <Route path="audit" element={<ProtectedRoute requiredRole="admin"><Audit /></ProtectedRoute>} />
