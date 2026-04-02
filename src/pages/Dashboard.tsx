@@ -63,10 +63,16 @@ function getPairStatus(activeSignal: SignalRow | null, analysis: PairAnalysis | 
 }
 
 export default function Dashboard() {
+  const { isAdmin } = useAuth();
   const [pairs, setPairs] = useState<WatchlistPair[]>([]);
   const [activeSignals, setActiveSignals] = useState<SignalRow[]>([]);
   const [latestAnalysis, setLatestAnalysis] = useState<PairAnalysis[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [running, setRunning] = useState(false);
+
+  const handleIngest = async () => { setRunning(true); try { const r = await invokeIngestMarketData(); toast.success(`Ingested ${r.ingested} pairs`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
+  const handleAnalysis = async () => { setRunning(true); try { const r = await invokeRunAnalysis(); toast.success(`Analysis: ${r.approved} approved, ${r.rejected} rejected`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
+  const handleReconcile = async () => { setRunning(true); try { const r = await invokeReconcileSignals(); toast.success(`Reconciled ${r.reconciled} signals`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
 
   const symbols = pairs.filter(p => p.is_active).map(p => p.symbol);
   const { tickers, loading: tickersLoading } = useBinanceTickers(symbols);
