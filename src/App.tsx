@@ -14,6 +14,7 @@ import AnalysisRuns from "@/pages/AnalysisRuns";
 import Watchlist from "@/pages/Watchlist";
 import SettingsPage from "@/pages/Settings";
 import Audit from "@/pages/Audit";
+import Metrics from "@/pages/Metrics";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
