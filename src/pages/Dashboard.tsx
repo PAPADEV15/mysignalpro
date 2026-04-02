@@ -111,7 +111,14 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Real-time crypto analysis monitoring</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <>
+              <Button size="sm" variant="outline" disabled={running} onClick={handleIngest}><RefreshCw className="h-3 w-3 mr-1" />Ingest Data</Button>
+              <Button size="sm" variant="outline" disabled={running} onClick={handleReconcile}><RefreshCw className="h-3 w-3 mr-1" />Reconcile</Button>
+              <Button size="sm" disabled={running} onClick={handleAnalysis}><Play className="h-3 w-3 mr-1" />Run Analysis</Button>
+            </>
+          )}
           <Badge variant="outline" className="gap-1">
             <Activity className="h-3 w-3 text-primary animate-pulse-glow" />
             Live
