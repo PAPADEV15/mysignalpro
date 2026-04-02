@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBinanceTickers } from '@/hooks/useBinanceData';
+import { invokeIngestMarketData, invokeRunAnalysis, invokeReconcileSignals } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle, RefreshCw, Play } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface WatchlistPair {
   id: string;
