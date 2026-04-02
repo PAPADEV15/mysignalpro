@@ -75,7 +75,7 @@ export default function Dashboard() {
   const handleReconcile = async () => { setRunning(true); try { const r = await invokeReconcileSignals(); toast.success(`Reconciled ${r.reconciled} signals`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
 
   const symbols = pairs.filter(p => p.is_active).map(p => p.symbol);
-  const { tickers, loading: tickersLoading } = useBinanceTickers(symbols);
+  const { tickers, loading: tickersLoading, wsConnected } = useBinanceTickers(symbols);
 
   useEffect(() => {
     fetchData();
