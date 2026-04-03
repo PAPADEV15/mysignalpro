@@ -73,6 +73,7 @@ export default function Dashboard() {
   const handleIngest = async () => { setRunning(true); try { const r = await invokeIngestMarketData(); toast.success(`Ingested ${r.ingested} pairs`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
   const handleAnalysis = async () => { setRunning(true); try { const r = await invokeRunAnalysis(); toast.success(`Analysis: ${r.approved} approved, ${r.rejected} rejected`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
   const handleReconcile = async () => { setRunning(true); try { const r = await invokeReconcileSignals(); toast.success(`Reconciled ${r.reconciled} signals`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
+  const handleInvalidate = async () => { setRunning(true); try { const r = await invokeInvalidateSignals(); toast.success(`Invalidated ${r.invalidated} signals`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
 
   const symbols = pairs.filter(p => p.is_active).map(p => p.symbol);
   const { tickers, loading: tickersLoading, wsConnected } = useBinanceTickers(symbols);
