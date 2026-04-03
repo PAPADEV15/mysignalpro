@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const BINANCE_BASE = 'https://api.binance.com/api/v3';
 const TIMEFRAMES = ['15m', '1h', '4h'] as const;
-const LIMITS: Record<string, number> = { '15m': 200, '1h': 100, '4h': 60 };
+const LIMITS: Record<string, number> = { '15m': 200, '1h': 200, '4h': 500 };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
