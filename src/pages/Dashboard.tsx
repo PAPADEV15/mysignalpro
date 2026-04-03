@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle, RefreshCw, Play, ShieldOff } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle, RefreshCw, Play, ShieldOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface WatchlistPair {
