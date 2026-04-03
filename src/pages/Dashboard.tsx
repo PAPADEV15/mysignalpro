@@ -117,6 +117,7 @@ export default function Dashboard() {
             <>
               <Button size="sm" variant="outline" disabled={running} onClick={handleIngest}><RefreshCw className="h-3 w-3 mr-1" />Ingest Data</Button>
               <Button size="sm" variant="outline" disabled={running} onClick={handleReconcile}><RefreshCw className="h-3 w-3 mr-1" />Reconcile</Button>
+              <Button size="sm" variant="outline" disabled={running} onClick={handleInvalidate}><ShieldOff className="h-3 w-3 mr-1" />Invalidate</Button>
               <Button size="sm" disabled={running} onClick={handleAnalysis}><Play className="h-3 w-3 mr-1" />Run Analysis</Button>
             </>
           )}
