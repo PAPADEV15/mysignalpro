@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBinanceTickers } from '@/hooks/useBinanceData';
-import { invokeIngestMarketData, invokeRunAnalysis, invokeReconcileSignals } from '@/lib/api';
+import { invokeIngestMarketData, invokeRunAnalysis, invokeReconcileSignals, invokeInvalidateSignals } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle, RefreshCw, Play } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle, RefreshCw, Play, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface WatchlistPair {
@@ -73,6 +73,7 @@ export default function Dashboard() {
   const handleIngest = async () => { setRunning(true); try { const r = await invokeIngestMarketData(); toast.success(`Ingested ${r.ingested} pairs`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
   const handleAnalysis = async () => { setRunning(true); try { const r = await invokeRunAnalysis(); toast.success(`Analysis: ${r.approved} approved, ${r.rejected} rejected`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
   const handleReconcile = async () => { setRunning(true); try { const r = await invokeReconcileSignals(); toast.success(`Reconciled ${r.reconciled} signals`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
+  const handleInvalidate = async () => { setRunning(true); try { const r = await invokeInvalidateSignals(); toast.success(`Invalidated ${r.invalidated} signals`); fetchData(); } catch(e:any) { toast.error(e.message); } finally { setRunning(false); } };
 
   const symbols = pairs.filter(p => p.is_active).map(p => p.symbol);
   const { tickers, loading: tickersLoading, wsConnected } = useBinanceTickers(symbols);
@@ -116,6 +117,7 @@ export default function Dashboard() {
             <>
               <Button size="sm" variant="outline" disabled={running} onClick={handleIngest}><RefreshCw className="h-3 w-3 mr-1" />Ingest Data</Button>
               <Button size="sm" variant="outline" disabled={running} onClick={handleReconcile}><RefreshCw className="h-3 w-3 mr-1" />Reconcile</Button>
+              <Button size="sm" variant="outline" disabled={running} onClick={handleInvalidate}><ShieldOff className="h-3 w-3 mr-1" />Invalidate</Button>
               <Button size="sm" disabled={running} onClick={handleAnalysis}><Play className="h-3 w-3 mr-1" />Run Analysis</Button>
             </>
           )}

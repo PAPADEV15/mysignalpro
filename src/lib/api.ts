@@ -17,3 +17,9 @@ export async function invokeReconcileSignals() {
   if (error) throw error;
   return data;
 }
+
+export async function invokeInvalidateSignals() {
+  const { data, error } = await supabase.functions.invoke('invalidate-signals', { body: {} });
+  if (error) throw error;
+  return data;
+}
