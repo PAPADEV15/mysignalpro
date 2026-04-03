@@ -113,13 +113,11 @@ export default function Dashboard() {
           <p className="text-sm text-muted-foreground">Real-time crypto analysis monitoring</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={running} onClick={handleIngest}><RefreshCw className="h-3 w-3 mr-1" />Ingest Data</Button>
+          <Button size="sm" disabled={running} onClick={handleAnalysis}><Play className="h-3 w-3 mr-1" />Run Analysis</Button>
+          <Button size="sm" variant="outline" disabled={running} onClick={handleReconcile}><RefreshCw className="h-3 w-3 mr-1" />Reconcile</Button>
           {isAdmin && (
-            <>
-              <Button size="sm" variant="outline" disabled={running} onClick={handleIngest}><RefreshCw className="h-3 w-3 mr-1" />Ingest Data</Button>
-              <Button size="sm" variant="outline" disabled={running} onClick={handleReconcile}><RefreshCw className="h-3 w-3 mr-1" />Reconcile</Button>
-              <Button size="sm" variant="outline" disabled={running} onClick={handleInvalidate}><ShieldOff className="h-3 w-3 mr-1" />Invalidate</Button>
-              <Button size="sm" disabled={running} onClick={handleAnalysis}><Play className="h-3 w-3 mr-1" />Run Analysis</Button>
-            </>
+            <Button size="sm" variant="outline" disabled={running} onClick={handleInvalidate}><ShieldOff className="h-3 w-3 mr-1" />Invalidate</Button>
           )}
           <Badge variant="outline" className={`gap-1 ${wsConnected ? '' : 'border-destructive'}`}>
             <Activity className={`h-3 w-3 ${wsConnected ? 'text-primary animate-pulse-glow' : 'text-destructive'}`} />
