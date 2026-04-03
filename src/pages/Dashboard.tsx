@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBinanceTickers } from '@/hooks/useBinanceData';
-import { invokeIngestMarketData, invokeRunAnalysis, invokeReconcileSignals } from '@/lib/api';
+import { invokeIngestMarketData, invokeRunAnalysis, invokeReconcileSignals, invokeInvalidateSignals } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
