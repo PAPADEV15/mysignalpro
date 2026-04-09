@@ -507,6 +507,7 @@ Deno.serve(async (req) => {
         const setup = analyzeSetup15m(candles15m, regime.direction, settings);
         if (!setup.valid || !setup.entryPrice || !setup.stopLoss) {
           rejected++;
+          debugDetails.push({ symbol, stage: 'setup', reason: setup.reason, score: regime.score + alignment.score });
           await supabase.from('pair_analysis_log').insert({
             analysis_run_id: runId, symbol,
             regime_4h: regime.reason,
