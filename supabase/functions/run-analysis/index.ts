@@ -171,21 +171,21 @@ function analyzeAlignment1H(candles: any[], direction: 'LONG' | 'SHORT', setting
   const emaDiffPct = Math.abs(ema20 - ema50) / ema50 * 100;
 
   if (direction === 'LONG') {
-    // Relaxed: allow if EMAs are converging (within 0.5%) and EMA9 is above both
-    const emaAligned = ema20 > ema50 || (allowEmaConvergence && emaDiffPct < 0.5 && ema9 > ema20);
+    // Relaxed: allow if EMAs are converging (within 1.5%) and EMA9 is above both
+    const emaAligned = ema20 > ema50 || (allowEmaConvergence && emaDiffPct < 1.5 && ema9 > ema20);
     if (!emaAligned) return { valid: false, direction: 'NONE', reason: `1H EMA20 < EMA50 (diff=${emaDiffPct.toFixed(2)}%)`, score: 0 };
-    const minRsi = alSettings.rsi_long_min ?? 45;
-    const maxRsi = alSettings.rsi_long_max ?? 70;
+    const minRsi = alSettings.rsi_long_min ?? 42;
+    const maxRsi = alSettings.rsi_long_max ?? 72;
     if (rsi < minRsi || rsi > maxRsi) return { valid: false, direction: 'NONE', reason: `1H RSI ${rsi.toFixed(1)} outside [${minRsi},${maxRsi}]`, score: 0 };
-    let score = (ema20 > ema50 ? 10 : 6) + Math.min(10, 10 * (1 - Math.abs(rsi - 57.5) / 20));
+    let score = (ema20 > ema50 ? 10 : 6) + Math.min(10, 10 * (1 - Math.abs(rsi - 57.5) / 22));
     return { valid: true, direction: 'LONG', reason: `1H aligned LONG: RSI=${rsi.toFixed(1)}, EMA diff=${emaDiffPct.toFixed(2)}%`, score };
   } else {
-    const emaAligned = ema20 < ema50 || (allowEmaConvergence && emaDiffPct < 0.5 && ema9 < ema20);
+    const emaAligned = ema20 < ema50 || (allowEmaConvergence && emaDiffPct < 1.5 && ema9 < ema20);
     if (!emaAligned) return { valid: false, direction: 'NONE', reason: `1H EMA20 > EMA50 (diff=${emaDiffPct.toFixed(2)}%)`, score: 0 };
-    const minRsi = alSettings.rsi_short_min ?? 30;
-    const maxRsi = alSettings.rsi_short_max ?? 55;
+    const minRsi = alSettings.rsi_short_min ?? 28;
+    const maxRsi = alSettings.rsi_short_max ?? 58;
     if (rsi < minRsi || rsi > maxRsi) return { valid: false, direction: 'NONE', reason: `1H RSI ${rsi.toFixed(1)} outside [${minRsi},${maxRsi}]`, score: 0 };
-    let score = (ema20 < ema50 ? 10 : 6) + Math.min(10, 10 * (1 - Math.abs(rsi - 42.5) / 20));
+    let score = (ema20 < ema50 ? 10 : 6) + Math.min(10, 10 * (1 - Math.abs(rsi - 43) / 22));
     return { valid: true, direction: 'SHORT', reason: `1H aligned SHORT: RSI=${rsi.toFixed(1)}, EMA diff=${emaDiffPct.toFixed(2)}%`, score };
   }
 }
