@@ -633,6 +633,7 @@ Deno.serve(async (req) => {
       success: true,
       runId,
       processed, rejected, approved, blocked, errors: errorsCount,
+      debug: debugDetails,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e: any) {
