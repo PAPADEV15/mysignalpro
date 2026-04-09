@@ -476,12 +476,13 @@ Deno.serve(async (req) => {
         const regime = analyzeRegime4H(candles4h, settings);
         if (!regime.valid || regime.direction === 'NONE') {
           rejected++;
-          await supabase.from('pair_analysis_log').insert({
+          const { error: logErr } = await supabase.from('pair_analysis_log').insert({
             analysis_run_id: runId, symbol,
             regime_4h: regime.reason,
             rejected_reason: regime.reason,
             score: 0,
           });
+          if (logErr) console.error(`[pair_analysis_log insert error] ${symbol}:`, logErr.message);
           continue;
         }
 
