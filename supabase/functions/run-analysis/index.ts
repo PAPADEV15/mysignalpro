@@ -97,35 +97,63 @@ function analyzeRegime4H(candles: any[], settings: any): Regime4H {
   const atr = last(calcATR(candles))!;
   const price = closes[closes.length - 1];
   const regimeSettings = settings?.regime_4h || {};
-  const rsiLongMin = regimeSettings.rsi_long_min ?? 52;
-  const rsiLongMax = regimeSettings.rsi_long_max ?? 68;
-  const rsiShortMin = regimeSettings.rsi_short_min ?? 32;
-  const rsiShortMax = regimeSettings.rsi_short_max ?? 48;
+  const rsiLongMin = regimeSettings.rsi_long_min ?? 45;
+  const rsiLongMax = regimeSettings.rsi_long_max ?? 72;
+  const rsiShortMin = regimeSettings.rsi_short_min ?? 28;
+  const rsiShortMax = regimeSettings.rsi_short_max ?? 55;
+  const allowRanging = regimeSettings.allow_ranging ?? true;
+  const emaDiffThreshold = regimeSettings.ema_diff_threshold_pct ?? 1.5;
+  const maxExtension = settings?.filters?.max_extension_pct ?? 3.0;
 
-  // Check LONG
-  if (ema20 > ema50 && price > sma200 && rsi >= rsiLongMin && rsi <= rsiLongMax) {
+  const emaDiffPct = Math.abs(ema20 - ema50) / ema50 * 100;
+
+  // Check LONG - relaxed: price near or above SMA200 (within 2%)
+  const priceAboveSma = price >= sma200 * 0.98;
+  if (ema20 > ema50 && priceAboveSma && rsi >= rsiLongMin && rsi <= rsiLongMax) {
     const extension = Math.abs(price - ema20) / ema20 * 100;
-    if (extension > (settings?.filters?.max_extension_pct ?? 2.0)) {
+    if (extension > maxExtension) {
       return { valid: false, direction: 'NONE', reason: `4H extended: ${extension.toFixed(2)}% from EMA20`, score: 0 };
     }
-    let score = 0;
-    score += 15; // regime correct
-    score += 10; // price > SMA200
-    score += Math.min(10, 10 * (1 - Math.abs(rsi - 60) / 16)); // RSI quality
+    let score = 15;
+    score += price > sma200 ? 10 : 5; // partial credit if near SMA200
+    score += Math.min(10, 10 * (1 - Math.abs(rsi - 58) / 20));
     return { valid: true, direction: 'LONG', reason: `4H bullish: EMA20>${ema50.toFixed(0)}, RSI=${rsi.toFixed(1)}`, score };
   }
 
-  // Check SHORT
-  if (ema20 < ema50 && price < sma200 && rsi >= rsiShortMin && rsi <= rsiShortMax) {
+  // Check SHORT - relaxed: price near or below SMA200 (within 2%)
+  const priceBelowSma = price <= sma200 * 1.02;
+  if (ema20 < ema50 && priceBelowSma && rsi >= rsiShortMin && rsi <= rsiShortMax) {
     const extension = Math.abs(price - ema20) / ema20 * 100;
-    if (extension > (settings?.filters?.max_extension_pct ?? 2.0)) {
+    if (extension > maxExtension) {
       return { valid: false, direction: 'NONE', reason: `4H extended: ${extension.toFixed(2)}% from EMA20`, score: 0 };
     }
-    let score = 0;
-    score += 15;
-    score += 10;
-    score += Math.min(10, 10 * (1 - Math.abs(rsi - 40) / 16));
+    let score = 15;
+    score += price < sma200 ? 10 : 5;
+    score += Math.min(10, 10 * (1 - Math.abs(rsi - 42) / 20));
     return { valid: true, direction: 'SHORT', reason: `4H bearish: EMA20<${ema50.toFixed(0)}, RSI=${rsi.toFixed(1)}`, score };
+  }
+
+  // RANGING MARKET: EMAs are close together
+  if (allowRanging && emaDiffPct < emaDiffThreshold) {
+    const ema9 = last(calcEMA(closes, 9))!;
+    
+    let direction: 'LONG' | 'SHORT';
+    let reason: string;
+    
+    // In ranging markets, use EMA9 vs EMA20 as primary direction signal
+    // This aligns with 1H structure better than raw momentum
+    if (ema9 > ema20) {
+      direction = 'LONG';
+      reason = `4H ranging-bullish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9>EMA20, RSI=${rsi.toFixed(1)}`;
+    } else {
+      direction = 'SHORT';
+      reason = `4H ranging-bearish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9<EMA20, RSI=${rsi.toFixed(1)}`;
+    }
+
+    // Ranging regime gets lower base score (quality penalty)
+    let score = 12;
+    score += Math.min(8, 8 * (1 - Math.abs(rsi - 50) / 25));
+    return { valid: true, direction, reason, score };
   }
 
   return { valid: false, direction: 'NONE', reason: `4H no clear regime: EMA20=${ema20.toFixed(2)}, EMA50=${ema50.toFixed(2)}, RSI=${rsi.toFixed(1)}`, score: 0 };
@@ -136,23 +164,29 @@ function analyzeAlignment1H(candles: any[], direction: 'LONG' | 'SHORT', setting
   const closes = candles.map((c: any) => c.close);
   const ema20 = last(calcEMA(closes, 20))!;
   const ema50 = last(calcEMA(closes, 50))!;
+  const ema9 = last(calcEMA(closes, 9))!;
   const rsi = last(calcRSI(closes))!;
   const alSettings = settings?.alignment_1h || {};
+  const allowEmaConvergence = alSettings.allow_ema_convergence ?? true;
+  const emaDiffPct = Math.abs(ema20 - ema50) / ema50 * 100;
 
   if (direction === 'LONG') {
-    if (ema20 < ema50) return { valid: false, direction: 'NONE', reason: `1H EMA20 < EMA50`, score: 0 };
-    const minRsi = alSettings.rsi_long_min ?? 50;
-    const maxRsi = alSettings.rsi_long_max ?? 65;
+    // Relaxed: allow if EMAs are converging (within 1.5%) and EMA9 is above both
+    const emaAligned = ema20 > ema50 || (allowEmaConvergence && emaDiffPct < 1.5 && ema9 > ema20);
+    if (!emaAligned) return { valid: false, direction: 'NONE', reason: `1H EMA20 < EMA50 (diff=${emaDiffPct.toFixed(2)}%)`, score: 0 };
+    const minRsi = alSettings.rsi_long_min ?? 42;
+    const maxRsi = alSettings.rsi_long_max ?? 72;
     if (rsi < minRsi || rsi > maxRsi) return { valid: false, direction: 'NONE', reason: `1H RSI ${rsi.toFixed(1)} outside [${minRsi},${maxRsi}]`, score: 0 };
-    let score = 10 + Math.min(10, 10 * (1 - Math.abs(rsi - 57.5) / 15));
-    return { valid: true, direction: 'LONG', reason: `1H aligned LONG: RSI=${rsi.toFixed(1)}`, score };
+    let score = (ema20 > ema50 ? 10 : 6) + Math.min(10, 10 * (1 - Math.abs(rsi - 57.5) / 22));
+    return { valid: true, direction: 'LONG', reason: `1H aligned LONG: RSI=${rsi.toFixed(1)}, EMA diff=${emaDiffPct.toFixed(2)}%`, score };
   } else {
-    if (ema20 > ema50) return { valid: false, direction: 'NONE', reason: `1H EMA20 > EMA50`, score: 0 };
-    const minRsi = alSettings.rsi_short_min ?? 35;
-    const maxRsi = alSettings.rsi_short_max ?? 50;
+    const emaAligned = ema20 < ema50 || (allowEmaConvergence && emaDiffPct < 1.5 && ema9 < ema20);
+    if (!emaAligned) return { valid: false, direction: 'NONE', reason: `1H EMA20 > EMA50 (diff=${emaDiffPct.toFixed(2)}%)`, score: 0 };
+    const minRsi = alSettings.rsi_short_min ?? 28;
+    const maxRsi = alSettings.rsi_short_max ?? 58;
     if (rsi < minRsi || rsi > maxRsi) return { valid: false, direction: 'NONE', reason: `1H RSI ${rsi.toFixed(1)} outside [${minRsi},${maxRsi}]`, score: 0 };
-    let score = 10 + Math.min(10, 10 * (1 - Math.abs(rsi - 42.5) / 15));
-    return { valid: true, direction: 'SHORT', reason: `1H aligned SHORT: RSI=${rsi.toFixed(1)}`, score };
+    let score = (ema20 < ema50 ? 10 : 6) + Math.min(10, 10 * (1 - Math.abs(rsi - 43) / 22));
+    return { valid: true, direction: 'SHORT', reason: `1H aligned SHORT: RSI=${rsi.toFixed(1)}, EMA diff=${emaDiffPct.toFixed(2)}%`, score };
   }
 }
 
@@ -199,15 +233,16 @@ function analyzeSetup15m(candles: any[], direction: 'LONG' | 'SHORT', settings: 
     const isBullishRetake = lastCandle.close > lastCandle.open && lastCandle.close > lastEma9;
     const hasVolume = lastVolume > avgVol;
     const hasBody = lastBody > avgBody;
-    const rsiRecovery = lastRsi > 50;
+    const rsiRecovery = lastRsi > 45; // relaxed from 50
 
+    // Accept if ANY of: pullback zone, bullish retake, or near VWAP
     if (!pullbackZone && !isBullishRetake) return { valid: false, direction: 'NONE', reason: '15m no valid pullback/retake for LONG', score: 0 };
 
     score += (pullbackZone ? 10 : 5);
     score += (isBullishRetake && hasBody ? 10 : 3);
-    score += (hasVolume ? 10 : 3);
+    score += (hasVolume ? 10 : 5); // more credit even without volume
 
-    if (!rsiRecovery) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not recovered above 50`, score: 0 };
+    if (!rsiRecovery) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not recovered above 45`, score: 0 };
 
     const sl = Math.min(lastEma21, price - 1.2 * lastAtr);
     const risk = price - sl;
@@ -219,15 +254,15 @@ function analyzeSetup15m(candles: any[], direction: 'LONG' | 'SHORT', settings: 
     const isBearishRetake = lastCandle.close < lastCandle.open && lastCandle.close < lastEma9;
     const hasVolume = lastVolume > avgVol;
     const hasBody = lastBody > avgBody;
-    const rsiDrop = lastRsi < 50;
+    const rsiDrop = lastRsi < 55; // relaxed from 50
 
     if (!pullbackZone && !isBearishRetake) return { valid: false, direction: 'NONE', reason: '15m no valid pullback/retake for SHORT', score: 0 };
 
     score += (pullbackZone ? 10 : 5);
     score += (isBearishRetake && hasBody ? 10 : 3);
-    score += (hasVolume ? 10 : 3);
+    score += (hasVolume ? 10 : 5);
 
-    if (!rsiDrop) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not below 50`, score: 0 };
+    if (!rsiDrop) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not below 55`, score: 0 };
 
     const sl = Math.max(lastEma21, price + 1.2 * lastAtr);
     const risk = sl - price;
@@ -238,6 +273,7 @@ function analyzeSetup15m(candles: any[], direction: 'LONG' | 'SHORT', settings: 
 }
 
 Deno.serve(async (req) => {
+  console.log('[run-analysis] v2 - ranging market support');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
@@ -254,7 +290,7 @@ Deno.serve(async (req) => {
     const strategySettings = settings.strategy || {};
     const riskSettings = settings.risk || {};
     const timingSettings = settings.timing || {};
-    const minScore = strategySettings.min_score_approved ?? 75;
+    const minScore = strategySettings.min_score_approved ?? 55;
     const eliteScore = strategySettings.min_score_elite ?? 88;
     const expiryCandles = timingSettings.signal_expiry_candles_15m ?? 16;
     const cooldownMinutes = timingSettings.cooldown_minutes ?? 60;
@@ -269,6 +305,7 @@ Deno.serve(async (req) => {
     const runId = runData!.id;
 
     let processed = 0, rejected = 0, approved = 0, blocked = 0, errorsCount = 0;
+    const debugDetails: any[] = [];
 
     for (const symbol of symbols) {
       try {
@@ -433,12 +470,14 @@ Deno.serve(async (req) => {
         const regime = analyzeRegime4H(candles4h, settings);
         if (!regime.valid || regime.direction === 'NONE') {
           rejected++;
-          await supabase.from('pair_analysis_log').insert({
+          debugDetails.push({ symbol, stage: 'regime', reason: regime.reason });
+          const { error: logErr } = await supabase.from('pair_analysis_log').insert({
             analysis_run_id: runId, symbol,
             regime_4h: regime.reason,
             rejected_reason: regime.reason,
             score: 0,
           });
+          if (logErr) debugDetails.push({ symbol, insertError: logErr.message });
           continue;
         }
 
@@ -446,6 +485,7 @@ Deno.serve(async (req) => {
         const alignment = analyzeAlignment1H(candles1h, regime.direction, settings);
         if (!alignment.valid) {
           rejected++;
+          debugDetails.push({ symbol, stage: 'alignment', regime: regime.reason, reason: alignment.reason, regimeScore: regime.score });
           await supabase.from('pair_analysis_log').insert({
             analysis_run_id: runId, symbol,
             regime_4h: regime.reason,
@@ -460,6 +500,7 @@ Deno.serve(async (req) => {
         const setup = analyzeSetup15m(candles15m, regime.direction, settings);
         if (!setup.valid || !setup.entryPrice || !setup.stopLoss) {
           rejected++;
+          debugDetails.push({ symbol, stage: 'setup', reason: setup.reason, score: regime.score + alignment.score });
           await supabase.from('pair_analysis_log').insert({
             analysis_run_id: runId, symbol,
             regime_4h: regime.reason,

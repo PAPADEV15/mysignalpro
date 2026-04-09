@@ -1,0 +1,2 @@
+UPDATE app_settings SET value_json = '{"rsi_long_min": 45, "rsi_long_max": 72, "rsi_short_min": 28, "rsi_short_max": 55, "allow_ranging": true, "ema_diff_threshold_pct": 1.5}'::jsonb WHERE key = 'regime_4h';
+UPDATE app_settings SET value_json = '{"version": "crypto_intraday_v1", "max_active_signals": 5, "min_score_approved": 55, "min_score_elite": 80}'::jsonb WHERE key = 'strategy';
