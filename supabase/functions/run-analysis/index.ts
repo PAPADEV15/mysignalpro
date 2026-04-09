@@ -477,16 +477,14 @@ Deno.serve(async (req) => {
         const regime = analyzeRegime4H(candles4h, settings);
         if (!regime.valid || regime.direction === 'NONE') {
           rejected++;
-          console.log(`[${symbol}] regime rejected: ${regime.reason}`);
-          const insertPayload = {
+          debugDetails.push({ symbol, stage: 'regime', reason: regime.reason });
+          const { error: logErr } = await supabase.from('pair_analysis_log').insert({
             analysis_run_id: runId, symbol,
             regime_4h: regime.reason,
             rejected_reason: regime.reason,
             score: 0,
-          };
-          console.log(`[${symbol}] inserting pair_analysis_log:`, JSON.stringify(insertPayload));
-          const { data: insertData, error: logErr } = await supabase.from('pair_analysis_log').insert(insertPayload).select();
-          console.log(`[${symbol}] insert result: data=${JSON.stringify(insertData)}, error=${logErr ? logErr.message : 'none'}`);
+          });
+          if (logErr) debugDetails.push({ symbol, insertError: logErr.message });
           continue;
         }
 
