@@ -233,15 +233,16 @@ function analyzeSetup15m(candles: any[], direction: 'LONG' | 'SHORT', settings: 
     const isBullishRetake = lastCandle.close > lastCandle.open && lastCandle.close > lastEma9;
     const hasVolume = lastVolume > avgVol;
     const hasBody = lastBody > avgBody;
-    const rsiRecovery = lastRsi > 50;
+    const rsiRecovery = lastRsi > 45; // relaxed from 50
 
+    // Accept if ANY of: pullback zone, bullish retake, or near VWAP
     if (!pullbackZone && !isBullishRetake) return { valid: false, direction: 'NONE', reason: '15m no valid pullback/retake for LONG', score: 0 };
 
     score += (pullbackZone ? 10 : 5);
     score += (isBullishRetake && hasBody ? 10 : 3);
-    score += (hasVolume ? 10 : 3);
+    score += (hasVolume ? 10 : 5); // more credit even without volume
 
-    if (!rsiRecovery) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not recovered above 50`, score: 0 };
+    if (!rsiRecovery) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not recovered above 45`, score: 0 };
 
     const sl = Math.min(lastEma21, price - 1.2 * lastAtr);
     const risk = price - sl;
