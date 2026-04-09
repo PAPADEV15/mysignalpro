@@ -254,15 +254,15 @@ function analyzeSetup15m(candles: any[], direction: 'LONG' | 'SHORT', settings: 
     const isBearishRetake = lastCandle.close < lastCandle.open && lastCandle.close < lastEma9;
     const hasVolume = lastVolume > avgVol;
     const hasBody = lastBody > avgBody;
-    const rsiDrop = lastRsi < 50;
+    const rsiDrop = lastRsi < 55; // relaxed from 50
 
     if (!pullbackZone && !isBearishRetake) return { valid: false, direction: 'NONE', reason: '15m no valid pullback/retake for SHORT', score: 0 };
 
     score += (pullbackZone ? 10 : 5);
     score += (isBearishRetake && hasBody ? 10 : 3);
-    score += (hasVolume ? 10 : 3);
+    score += (hasVolume ? 10 : 5);
 
-    if (!rsiDrop) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not below 50`, score: 0 };
+    if (!rsiDrop) return { valid: false, direction: 'NONE', reason: `15m RSI ${lastRsi.toFixed(1)} not below 55`, score: 0 };
 
     const sl = Math.max(lastEma21, price + 1.2 * lastAtr);
     const risk = sl - price;
