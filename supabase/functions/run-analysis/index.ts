@@ -280,6 +280,7 @@ function analyzeSetup15m(candles: any[], direction: 'LONG' | 'SHORT', settings: 
 }
 
 Deno.serve(async (req) => {
+  console.log('[run-analysis] v2 - ranging market support');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
