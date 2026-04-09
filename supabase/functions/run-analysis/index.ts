@@ -492,6 +492,7 @@ Deno.serve(async (req) => {
         const alignment = analyzeAlignment1H(candles1h, regime.direction, settings);
         if (!alignment.valid) {
           rejected++;
+          debugDetails.push({ symbol, stage: 'alignment', regime: regime.reason, reason: alignment.reason, regimeScore: regime.score });
           await supabase.from('pair_analysis_log').insert({
             analysis_run_id: runId, symbol,
             regime_4h: regime.reason,
