@@ -133,9 +133,8 @@ function analyzeRegime4H(candles: any[], settings: any): Regime4H {
     return { valid: true, direction: 'SHORT', reason: `4H bearish: EMA20<${ema50.toFixed(0)}, RSI=${rsi.toFixed(1)}`, score };
   }
 
-  // RANGING MARKET: EMAs are close together, RSI near 50
+  // RANGING MARKET: EMAs are close together
   if (allowRanging && emaDiffPct < emaDiffThreshold) {
-    // Determine lean direction from short-term momentum
     const ema9 = last(calcEMA(closes, 9))!;
     const recentCloses = closes.slice(-5);
     const shortMomentum = recentCloses[recentCloses.length - 1] - recentCloses[0];
@@ -143,19 +142,25 @@ function analyzeRegime4H(candles: any[], settings: any): Regime4H {
     let direction: 'LONG' | 'SHORT';
     let reason: string;
     
-    if (shortMomentum > 0 && ema9 > ema20) {
+    // Accept lean from EITHER EMA9 position OR price momentum (not both required)
+    const ema9Long = ema9 > ema20;
+    const momentumUp = shortMomentum > 0;
+    const ema9Short = ema9 < ema20;
+    const momentumDown = shortMomentum < 0;
+    
+    if (ema9Long || momentumUp) {
       direction = 'LONG';
-      reason = `4H ranging-bullish: EMAs converged (${emaDiffPct.toFixed(2)}%), momentum up, RSI=${rsi.toFixed(1)}`;
-    } else if (shortMomentum < 0 && ema9 < ema20) {
+      reason = `4H ranging-bullish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9${ema9Long?'>':'<'}EMA20, mom=${momentumUp?'up':'down'}, RSI=${rsi.toFixed(1)}`;
+    } else if (ema9Short || momentumDown) {
       direction = 'SHORT';
-      reason = `4H ranging-bearish: EMAs converged (${emaDiffPct.toFixed(2)}%), momentum down, RSI=${rsi.toFixed(1)}`;
+      reason = `4H ranging-bearish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9${ema9Short?'<':'>'}EMA20, mom=${momentumDown?'down':'up'}, RSI=${rsi.toFixed(1)}`;
     } else {
-      return { valid: false, direction: 'NONE', reason: `4H ranging but no momentum lean: EMA diff=${emaDiffPct.toFixed(2)}%, RSI=${rsi.toFixed(1)}`, score: 0 };
+      return { valid: false, direction: 'NONE', reason: `4H ranging no lean: EMA diff=${emaDiffPct.toFixed(2)}%, RSI=${rsi.toFixed(1)}`, score: 0 };
     }
 
     // Ranging regime gets lower base score (quality penalty)
-    let score = 10;
-    score += Math.min(8, 8 * (1 - Math.abs(rsi - 50) / 20));
+    let score = 12;
+    score += Math.min(8, 8 * (1 - Math.abs(rsi - 50) / 25));
     return { valid: true, direction, reason, score };
   }
 
