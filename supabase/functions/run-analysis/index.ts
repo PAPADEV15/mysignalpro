@@ -97,35 +97,66 @@ function analyzeRegime4H(candles: any[], settings: any): Regime4H {
   const atr = last(calcATR(candles))!;
   const price = closes[closes.length - 1];
   const regimeSettings = settings?.regime_4h || {};
-  const rsiLongMin = regimeSettings.rsi_long_min ?? 52;
-  const rsiLongMax = regimeSettings.rsi_long_max ?? 68;
-  const rsiShortMin = regimeSettings.rsi_short_min ?? 32;
-  const rsiShortMax = regimeSettings.rsi_short_max ?? 48;
+  const rsiLongMin = regimeSettings.rsi_long_min ?? 45;
+  const rsiLongMax = regimeSettings.rsi_long_max ?? 72;
+  const rsiShortMin = regimeSettings.rsi_short_min ?? 28;
+  const rsiShortMax = regimeSettings.rsi_short_max ?? 55;
+  const allowRanging = regimeSettings.allow_ranging ?? true;
+  const emaDiffThreshold = regimeSettings.ema_diff_threshold_pct ?? 1.5;
+  const maxExtension = settings?.filters?.max_extension_pct ?? 3.0;
 
-  // Check LONG
-  if (ema20 > ema50 && price > sma200 && rsi >= rsiLongMin && rsi <= rsiLongMax) {
+  const emaDiffPct = Math.abs(ema20 - ema50) / ema50 * 100;
+
+  // Check LONG - relaxed: price near or above SMA200 (within 2%)
+  const priceAboveSma = price >= sma200 * 0.98;
+  if (ema20 > ema50 && priceAboveSma && rsi >= rsiLongMin && rsi <= rsiLongMax) {
     const extension = Math.abs(price - ema20) / ema20 * 100;
-    if (extension > (settings?.filters?.max_extension_pct ?? 2.0)) {
+    if (extension > maxExtension) {
       return { valid: false, direction: 'NONE', reason: `4H extended: ${extension.toFixed(2)}% from EMA20`, score: 0 };
     }
-    let score = 0;
-    score += 15; // regime correct
-    score += 10; // price > SMA200
-    score += Math.min(10, 10 * (1 - Math.abs(rsi - 60) / 16)); // RSI quality
+    let score = 15;
+    score += price > sma200 ? 10 : 5; // partial credit if near SMA200
+    score += Math.min(10, 10 * (1 - Math.abs(rsi - 58) / 20));
     return { valid: true, direction: 'LONG', reason: `4H bullish: EMA20>${ema50.toFixed(0)}, RSI=${rsi.toFixed(1)}`, score };
   }
 
-  // Check SHORT
-  if (ema20 < ema50 && price < sma200 && rsi >= rsiShortMin && rsi <= rsiShortMax) {
+  // Check SHORT - relaxed: price near or below SMA200 (within 2%)
+  const priceBelowSma = price <= sma200 * 1.02;
+  if (ema20 < ema50 && priceBelowSma && rsi >= rsiShortMin && rsi <= rsiShortMax) {
     const extension = Math.abs(price - ema20) / ema20 * 100;
-    if (extension > (settings?.filters?.max_extension_pct ?? 2.0)) {
+    if (extension > maxExtension) {
       return { valid: false, direction: 'NONE', reason: `4H extended: ${extension.toFixed(2)}% from EMA20`, score: 0 };
     }
-    let score = 0;
-    score += 15;
-    score += 10;
-    score += Math.min(10, 10 * (1 - Math.abs(rsi - 40) / 16));
+    let score = 15;
+    score += price < sma200 ? 10 : 5;
+    score += Math.min(10, 10 * (1 - Math.abs(rsi - 42) / 20));
     return { valid: true, direction: 'SHORT', reason: `4H bearish: EMA20<${ema50.toFixed(0)}, RSI=${rsi.toFixed(1)}`, score };
+  }
+
+  // RANGING MARKET: EMAs are close together, RSI near 50
+  if (allowRanging && emaDiffPct < emaDiffThreshold) {
+    // Determine lean direction from short-term momentum
+    const ema9 = last(calcEMA(closes, 9))!;
+    const recentCloses = closes.slice(-5);
+    const shortMomentum = recentCloses[recentCloses.length - 1] - recentCloses[0];
+    
+    let direction: 'LONG' | 'SHORT';
+    let reason: string;
+    
+    if (shortMomentum > 0 && ema9 > ema20) {
+      direction = 'LONG';
+      reason = `4H ranging-bullish: EMAs converged (${emaDiffPct.toFixed(2)}%), momentum up, RSI=${rsi.toFixed(1)}`;
+    } else if (shortMomentum < 0 && ema9 < ema20) {
+      direction = 'SHORT';
+      reason = `4H ranging-bearish: EMAs converged (${emaDiffPct.toFixed(2)}%), momentum down, RSI=${rsi.toFixed(1)}`;
+    } else {
+      return { valid: false, direction: 'NONE', reason: `4H ranging but no momentum lean: EMA diff=${emaDiffPct.toFixed(2)}%, RSI=${rsi.toFixed(1)}`, score: 0 };
+    }
+
+    // Ranging regime gets lower base score (quality penalty)
+    let score = 10;
+    score += Math.min(8, 8 * (1 - Math.abs(rsi - 50) / 20));
+    return { valid: true, direction, reason, score };
   }
 
   return { valid: false, direction: 'NONE', reason: `4H no clear regime: EMA20=${ema20.toFixed(2)}, EMA50=${ema50.toFixed(2)}, RSI=${rsi.toFixed(1)}`, score: 0 };
