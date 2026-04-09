@@ -312,6 +312,7 @@ Deno.serve(async (req) => {
     const runId = runData!.id;
 
     let processed = 0, rejected = 0, approved = 0, blocked = 0, errorsCount = 0;
+    const debugDetails: any[] = [];
 
     for (const symbol of symbols) {
       try {
