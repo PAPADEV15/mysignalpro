@@ -136,26 +136,18 @@ function analyzeRegime4H(candles: any[], settings: any): Regime4H {
   // RANGING MARKET: EMAs are close together
   if (allowRanging && emaDiffPct < emaDiffThreshold) {
     const ema9 = last(calcEMA(closes, 9))!;
-    const recentCloses = closes.slice(-5);
-    const shortMomentum = recentCloses[recentCloses.length - 1] - recentCloses[0];
     
     let direction: 'LONG' | 'SHORT';
     let reason: string;
     
-    // Accept lean from EITHER EMA9 position OR price momentum (not both required)
-    const ema9Long = ema9 > ema20;
-    const momentumUp = shortMomentum > 0;
-    const ema9Short = ema9 < ema20;
-    const momentumDown = shortMomentum < 0;
-    
-    if (ema9Long || momentumUp) {
+    // In ranging markets, use EMA9 vs EMA20 as primary direction signal
+    // This aligns with 1H structure better than raw momentum
+    if (ema9 > ema20) {
       direction = 'LONG';
-      reason = `4H ranging-bullish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9${ema9Long?'>':'<'}EMA20, mom=${momentumUp?'up':'down'}, RSI=${rsi.toFixed(1)}`;
-    } else if (ema9Short || momentumDown) {
-      direction = 'SHORT';
-      reason = `4H ranging-bearish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9${ema9Short?'<':'>'}EMA20, mom=${momentumDown?'down':'up'}, RSI=${rsi.toFixed(1)}`;
+      reason = `4H ranging-bullish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9>EMA20, RSI=${rsi.toFixed(1)}`;
     } else {
-      return { valid: false, direction: 'NONE', reason: `4H ranging no lean: EMA diff=${emaDiffPct.toFixed(2)}%, RSI=${rsi.toFixed(1)}`, score: 0 };
+      direction = 'SHORT';
+      reason = `4H ranging-bearish: EMAs converged (${emaDiffPct.toFixed(2)}%), EMA9<EMA20, RSI=${rsi.toFixed(1)}`;
     }
 
     // Ranging regime gets lower base score (quality penalty)
